@@ -1,63 +1,76 @@
-📥 Instalar e Configurar o Termux
+BCH Predictor Com termux 📱 (celular)
 
-1. Baixe o Termux na Play Store (ou F-Droid).
+Este projeto fornece uma interface de autenticação para BCH.games usando um proxy WebSocket.
+
+🚀 Tecnologias
+
+HTML + JavaScript (Front-end)
+
+Node.js + Express (Proxy WebSocket)
+
+http-proxy-middleware (Middleware para redirecionamento WebSocket)
 
 
-2. Atualize os pacotes antes de começar:
+📦 Instalação
 
-apt update && apt upgrade -y
+1. Clone o repositório
+
+git clone https://github.com/jud2024/bchpredictor.git
+cd bchpredictor
 
 
-
-🚀 Instalando as Dependências
-
-🔹 1. Instalar o Node.js e Git
-
-pkg install nodejs git -y
-
-🔹 2. Clonar o Repositório
-
-git clone https://github.com/seu-usuario/bch-auth.git
-cd bch-auth
-
-🔹 3. Instalar os Pacotes do Node.js
+2. Instale as dependências
 
 npm install
 
-▶️ Rodando o Projeto
+
+
+▶️ Como Rodar
 
 🔹 1. Iniciar o Proxy (porta 3000)
 
 node proxy.js
 
-🔹 2. Servir o index.html no localhost:5050
+🔹 2. Servir o index.html (porta 5050)
 
-Com o http-server:
+Com Node.js (http-server)
 
 npm install -g http-server
 http-server -p 5050
 
-Ou com Python (caso tenha instalado):
+Com Python (http.server)
 
 python -m http.server 5050
 
 
-Agora, acesse http://localhost:5050 pelo navegador do seu celular.
+Agora, acesse http://localhost:5050 no navegador.
+
+📜 Como Usar
+
+1. Insira seu auth_token_v1 no campo de autenticação.
+
+
+2. Clique no botão Login.
+
+
+3. O WebSocket tentará autenticar e retornará seu nome de usuário.
+
+
+
+📌 Estrutura do Projeto
+
+bchpredictor/
+│── index.html        # Página principal
+│── proxy.js          # Servidor Proxy WebSocket
+│── package.json      # Dependências do projeto
+└── README.md         # Documentação
+
+📄 Licença
+
+Este projeto é de código aberto. Sinta-se livre para modificar e usar!
 
 
 ---
 
-📌 Observação
-
-Se estiver rodando no celular, o Termux não permite acesso externo ao localhost.
-Solução: Pegue o IP do seu celular e acesse pelo navegador em outro dispositivo.
-
-ifconfig
-
-Copie o IP (exemplo 192.168.1.10) e acesse:
-
-http://192.168.1.10:5050
-
-
-Agora seu projeto está rodando no Termux! 🎉
+Se precisar de ajustes ou quiser adicionar mais informações, me avise!
 
