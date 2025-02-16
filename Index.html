@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticação BCH.games</title>
+</head>
+<body>
+    <h2>Autenticação BCH.games</h2>
+    <label for="token">Auth Token:</label>
+    <input type="text" id="token" placeholder="Cole seu auth_token_v1 aqui">
+    <button onclick="autenticar()">Login</button>
+    <p id="status">⏳ Aguardando autenticação...</p>
+
+    <script>
+        let ws;
+
+        function autenticar() {
+            const token = document.getElementById("token").value;
+            if (!token) {
+                alert("Por favor, insira seu auth_token_v1!");
+                return;
+            }
+
+            // Conectar ao WebSocket via Proxy
+            ws = new WebSocket("ws://localhost:3000/ws", "graphql-transport-ws");
+
+            ws.onopen = () => {
+                document.getElementById("status").textContent = "✅ Conectado! Enviando autenticação...";
+
+                // Enviar autenticação com o token inserido
+                let authPayload = {
+                    "id": crypto.randomUUID(),
+                    "type": "subscribe",
+                    "payload": {
+                        "query": `{ authenticate(authToken: "${token}") { _id username email } }`,
+                        "variables": {}
+                    }
+                };
+
+                ws.send(JSON.stringify(authPayload));
+            };
+
+            ws.onmessage = (event) => {
+                let data = JSON.parse(event.data);
+                console.log("📩 Resposta:", data);
+
+                if (data.payload?.data?.authenticate) {
+                    document.getElementById("status").textContent = `✅ Logado como ${data.payload.data.authenticate.username}`;
+                } else {
+                    document.getElementById("status").textContent = "❌ Falha na autenticação!";
+                }
+            };
+
+            ws.onerror = (err) => {
+                console.error("Erro no WebSocket:", err);
+                document.getElementById("status").textContent = "❌ Erro de conexão!";
+            };
+
+            ws.onclose = () => {
+                document.getElementById("status").textContent = "🔴 WebSocket desconectado!";
+            };
+        }
+    </script>
+</body>
+</html>
