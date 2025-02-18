@@ -26,28 +26,47 @@
             ws = new WebSocket("ws://localhost:3000/ws", "graphql-transport-ws");
 
             ws.onopen = () => {
-                document.getElementById("status").textContent = "✅ Conectado! Enviando autenticação...";
+                document.getElementById("status").textContent = "✅ Conectado! Inicializando sessão...";
 
-                // Enviar autenticação com o token inserido
-                let authPayload = {
-                    "id": crypto.randomUUID(),
-                    "type": "subscribe",
-                    "payload": {
-                        "query": `{ authenticate(authToken: "${token}") { _id username email } }`,
-                        "variables": {}
-                    }
-                };
+                // Mensagem inicial obrigatória para GraphQL WebSocket
+                ws.send(JSON.stringify({
+                    "type": "connection_init",
+                    "payload": {}
+                }));
 
-                ws.send(JSON.stringify(authPayload));
+                console.log("📤 Enviado: connection_init");
             };
 
             ws.onmessage = (event) => {
                 let data = JSON.parse(event.data);
                 console.log("📩 Resposta:", data);
 
+                if (data.type === "connection_ack") {
+                    console.log("✅ Conexão WebSocket aceita!");
+
+                    // Enviar autenticação após o "connection_ack"
+                    let authPayload = {
+                        "id": crypto.randomUUID(),
+                        "type": "subscribe",
+                        "payload": {
+                            "query": `{
+                                authenticate(authToken: "${token}") {
+                                    _id
+                                    username
+                                    email
+                                }
+                            }`,
+                            "variables": {}
+                        }
+                    };
+
+                    ws.send(JSON.stringify(authPayload));
+                    console.log("📤 Enviado: Autenticação");
+                }
+
                 if (data.payload?.data?.authenticate) {
                     document.getElementById("status").textContent = `✅ Logado como ${data.payload.data.authenticate.username}`;
-                } else {
+                } else if (data.type === "error") {
                     document.getElementById("status").textContent = "❌ Falha na autenticação!";
                 }
             };
