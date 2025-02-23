@@ -12,8 +12,13 @@
     <button onclick="autenticar()">Login</button>
     <p id="status">⏳ Aguardando autenticação...</p>
 
+    <h3>Queries</h3>
+    <button onclick="consultarJogos()">Obter Jogos Ativos (Mines)</button>
+    <pre id="resultado"></pre>
+
     <script>
         let ws;
+        let isConnected = false;
 
         function autenticar() {
             const token = document.getElementById("token").value;
@@ -56,8 +61,11 @@
                 if (data.type === "next" && data.payload?.data?.authenticate) {
                     let user = data.payload.data.authenticate;
                     document.getElementById("status").textContent = `✅ Logado como ${user.username} (${user.email})`;
+                    isConnected = true;
                 } else if (data.type === "error") {
                     document.getElementById("status").textContent = "❌ Erro na autenticação!";
+                } else if (data.type === "next" && data.payload?.data?.minesGetActiveGames) {
+                    document.getElementById("resultado").textContent = JSON.stringify(data.payload.data.minesGetActiveGames, null, 2);
                 }
             };
 
@@ -68,7 +76,40 @@
 
             ws.onclose = () => {
                 document.getElementById("status").textContent = "🔴 WebSocket desconectado!";
+                isConnected = false;
             };
+        }
+
+        function consultarJogos() {
+            if (!isConnected || !ws || ws.readyState !== WebSocket.OPEN) {
+                alert("Você precisa estar autenticado para consultar os jogos!");
+                return;
+            }
+
+            let queryPayload = {
+                id: crypto.randomUUID(),
+                type: "subscribe",
+                payload: {
+                    query: `{
+                        minesGetActiveGames {
+                            _id
+                            amount
+                            details {
+                                ... on MinesGameDetails {
+                                    __typename
+                                    mines
+                                    uncovered
+                                    minesCount
+                                }
+                                __typename
+                            }
+                        }
+                    }`,
+                    variables: {}
+                }
+            };
+
+            ws.send(JSON.stringify(queryPayload));
         }
     </script>
 </body>
