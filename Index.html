@@ -16,6 +16,12 @@
     <button onclick="consultarJogos()">Obter Jogos Ativos (Mines)</button>
     <pre id="resultado"></pre>
 
+    <h3>Cashout</h3>
+    <label for="cashoutId">ID da Aposta (Cashout):</label>
+    <input type="text" id="cashoutId" placeholder="Cole o _id da aposta aqui">
+    <button onclick="realizarCashout()">Fazer Cashout</button>
+    <pre id="cashoutResultado"></pre>
+
     <script>
         let ws;
         let isConnected = false;
@@ -66,6 +72,8 @@
                     document.getElementById("status").textContent = "❌ Erro na autenticação!";
                 } else if (data.type === "next" && data.payload?.data?.minesGetActiveGames) {
                     document.getElementById("resultado").textContent = JSON.stringify(data.payload.data.minesGetActiveGames, null, 2);
+                } else if (data.type === "next" && data.payload?.data?.minesCashout) {
+                    document.getElementById("cashoutResultado").textContent = JSON.stringify(data.payload.data.minesCashout, null, 2);
                 }
             };
 
@@ -110,6 +118,49 @@
             };
 
             ws.send(JSON.stringify(queryPayload));
+        }
+
+        function realizarCashout() {
+            const apostaId = document.getElementById("cashoutId").value;
+            if (!apostaId) {
+                alert("Por favor, insira o _id da aposta!");
+                return;
+            }
+
+            if (!isConnected || !ws || ws.readyState !== WebSocket.OPEN) {
+                alert("Você precisa estar autenticado para realizar o cashout!");
+                return;
+            }
+
+            let cashoutPayload = {
+                id: crypto.randomUUID(),
+                type: "subscribe",
+                payload: {
+                    query: `mutation ($_id: ID!) {
+                        minesCashout(_id: $_id) {
+                            id
+                            isWin
+                            multiplier
+                            profit
+                            amount
+                            details {
+                                ... on MinesGameDetails {
+                                    __typename
+                                    mines
+                                    uncovered
+                                    minesCount
+                                }
+                                __typename
+                            }
+                        }
+                    }`,
+                    variables: {
+                        _id: apostaId
+                    }
+                }
+            };
+
+            ws.send(JSON.stringify(cashoutPayload));
         }
     </script>
 </body>
