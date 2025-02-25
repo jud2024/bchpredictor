@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autenticação BCH.games</title>
+    <title>Interceptador de Cashout BCH.games</title>
 </head>
 <body>
-    <h2>Autenticação BCH.games</h2>
+    <h2>Interceptador de Cashout</h2>
+
+    <!-- Campo para token -->
     <label for="token">Auth Token:</label>
-    <input type="text" id="token" placeholder="Cole seu auth_token_v1 aqui">
+    <input type="text" id="token" placeholder="Cole seu auth_token_v1">
     <button onclick="autenticar()">Login</button>
     <p id="status">⏳ Aguardando autenticação...</p>
 
-    <h3>Queries</h3>
-    <button onclick="consultarJogos()">Obter Jogos Ativos (Mines)</button>
-    <pre id="resultado"></pre>
+    <!-- Botão para obter jogos ativos -->
+    <button onclick="obterJogos()">Obter Jogos Ativos</button>
 
-    <h3>Cashout</h3>
-    <label for="cashoutId">ID da Aposta (Cashout):</label>
-    <input type="text" id="cashoutId" placeholder="Cole o _id da aposta aqui">
-    <button onclick="realizarCashout()">Fazer Cashout</button>
-    <pre id="cashoutResultado"></pre>
+    <!-- Campo e botão para cashout falso -->
+    <label for="betId">ID da Aposta:</label>
+    <input type="text" id="betId" placeholder="Cole o _id da aposta">
+    <button onclick="cashoutFake()">Cashout Falso</button>
+
+    <p id="resultado"></p>
 
     <script>
         let ws;
-        let isConnected = false;
 
         function autenticar() {
             const token = document.getElementById("token").value;
@@ -36,131 +37,80 @@
             ws = new WebSocket("wss://bch.games/api/graphql", "graphql-transport-ws");
 
             ws.onopen = () => {
-                document.getElementById("status").textContent = "✅ Conectado! Iniciando autenticação...";
-                
+                document.getElementById("status").textContent = "✅ Conectado!";
                 ws.send(JSON.stringify({ type: "connection_init", payload: {} }));
 
-                setTimeout(() => {
-                    let authPayload = {
-                        id: "1",
-                        type: "subscribe",
-                        payload: {
-                            query: `{
-                                authenticate(authToken: "${token}") {
-                                    _id
-                                    username
-                                    email
-                                }
-                            }`,
-                            variables: {}
-                        }
-                    };
+                // Autenticação
+                const authPayload = {
+                    id: "1",
+                    type: "subscribe",
+                    payload: {
+                        query: `{ authenticate(authToken: "${token}") { _id username email } }`,
+                        variables: {}
+                    }
+                };
 
-                    ws.send(JSON.stringify(authPayload));
-                }, 1000);
+                ws.send(JSON.stringify(authPayload));
             };
 
             ws.onmessage = (event) => {
-                let data = JSON.parse(event.data);
+                const data = JSON.parse(event.data);
                 console.log("📩 Mensagem recebida:", data);
 
-                if (data.type === "next" && data.payload?.data?.authenticate) {
-                    let user = data.payload.data.authenticate;
-                    document.getElementById("status").textContent = `✅ Logado como ${user.username} (${user.email})`;
-                    isConnected = true;
-                } else if (data.type === "error") {
-                    document.getElementById("status").textContent = "❌ Erro na autenticação!";
-                } else if (data.type === "next" && data.payload?.data?.minesGetActiveGames) {
-                    document.getElementById("resultado").textContent = JSON.stringify(data.payload.data.minesGetActiveGames, null, 2);
-                } else if (data.type === "next" && data.payload?.data?.minesCashout) {
-                    document.getElementById("cashoutResultado").textContent = JSON.stringify(data.payload.data.minesCashout, null, 2);
+                if (data.payload?.data?.authenticate) {
+                    document.getElementById("status").textContent = `✅ Logado como ${data.payload.data.authenticate.username}`;
+                } else if (data.payload?.data?.minesCashout) {
+                    document.getElementById("resultado").textContent = `💎 Fake Cashout! Minas: ${JSON.stringify(data.payload.data.minesCashout.details.mines)}`;
                 }
             };
 
             ws.onerror = (err) => {
-                console.error("Erro no WebSocket:", err);
-                document.getElementById("status").textContent = "❌ Erro de conexão!";
+                console.error("❌ Erro:", err);
             };
 
             ws.onclose = () => {
                 document.getElementById("status").textContent = "🔴 WebSocket desconectado!";
-                isConnected = false;
             };
         }
 
-        function consultarJogos() {
-            if (!isConnected || !ws || ws.readyState !== WebSocket.OPEN) {
-                alert("Você precisa estar autenticado para consultar os jogos!");
-                return;
-            }
-
-            let queryPayload = {
-                id: crypto.randomUUID(),
+        function obterJogos() {
+            const payload = {
+                id: "2",
                 type: "subscribe",
                 payload: {
-                    query: `{
-                        minesGetActiveGames {
-                            _id
-                            amount
-                            details {
-                                ... on MinesGameDetails {
-                                    __typename
-                                    mines
-                                    uncovered
-                                    minesCount
-                                }
-                                __typename
-                            }
-                        }
-                    }`,
+                    query: `{ minesGetActiveGames { _id amount details { ... on MinesGameDetails { mines uncovered minesCount } } } }`,
                     variables: {}
                 }
             };
 
-            ws.send(JSON.stringify(queryPayload));
+            ws.send(JSON.stringify(payload));
         }
 
-        function realizarCashout() {
-            const apostaId = document.getElementById("cashoutId").value;
-            if (!apostaId) {
+        function cashoutFake() {
+            const betId = document.getElementById("betId").value;
+            if (!betId) {
                 alert("Por favor, insira o _id da aposta!");
                 return;
             }
 
-            if (!isConnected || !ws || ws.readyState !== WebSocket.OPEN) {
-                alert("Você precisa estar autenticado para realizar o cashout!");
-                return;
-            }
-
-            let cashoutPayload = {
-                id: crypto.randomUUID(),
-                type: "subscribe",
+            const payload = {
+                id: "fake-cashout",
+                type: "next",
                 payload: {
-                    query: `mutation ($_id: ID!) {
-                        minesCashout(_id: $_id) {
-                            id
-                            isWin
-                            multiplier
-                            profit
-                            amount
-                            details {
-                                ... on MinesGameDetails {
-                                    __typename
-                                    mines
-                                    uncovered
-                                    minesCount
-                                }
-                                __typename
-                            }
+                    data: {
+                        minesCashout: {
+                            id: betId,
+                            isWin: true,
+                            mines: [1, 5, 9, 13, 17], // Simulação fixa
+                            uncovered: [2, 3, 4],
+                            minesCount: 5
                         }
-                    }`,
-                    variables: {
-                        _id: apostaId
                     }
                 }
             };
 
-            ws.send(JSON.stringify(cashoutPayload));
+            ws.send(JSON.stringify(payload));
+            document.getElementById("resultado").textContent = "✅ Cashout falso enviado!";
         }
     </script>
 </body>
