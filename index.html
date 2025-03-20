@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interceptador WebSocket BCH</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        textarea { width: 80%; height: 200px; }
+        button { padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Interceptador WebSocket - BCH Games</h1>
+    <textarea id="logs" readonly></textarea><br>
+    <input type="text" id="msg" placeholder="Digite uma mensagem">
+    <button onclick="sendMessage()">Enviar</button>
+
+    <script>
+        const logs = document.getElementById("logs");
+        const ws = new WebSocket("wss://SEU-SITE-NETLIFY/ws");
+
+        ws.onopen = () => logMessage("🔗 Conectado ao Proxy BCH!");
+        ws.onmessage = (event) => logMessage("📩 Mensagem recebida: " + event.data);
+        ws.onerror = (error) => logMessage("❌ Erro: " + error.message);
+        ws.onclose = () => logMessage("🔌 Conexão encerrada!");
+
+        function logMessage(msg) {
+            logs.value += msg + "\n";
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function sendMessage() {
+            const msg = document.getElementById("msg").value;
+            ws.send(msg);
+            logMessage("📤 Enviado: " + msg);
+        }
+    </script>
+</body>
+</html>
