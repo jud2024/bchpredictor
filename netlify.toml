@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/ws"
+  to = "/.netlify/functions/ws-proxy"
+  status = 200
